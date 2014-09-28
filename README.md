@@ -20,7 +20,7 @@ path
 
 -i CTIDS [CTIDS ...], --ctids CTIDS [CTIDS ...]
 
-List of CTID's to either back up or exclude.
+	List of CTID's to either back up or exclude.
 
 -e, --exclude
 
