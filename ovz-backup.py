@@ -45,6 +45,7 @@ class OVZBackup:
         return ['vzctl', 'snapshot-delete', str(ctid), '--id', str(unique_id)]
 
     def _backup_cmd(self, file_to_back_up, backup_to):
+        #Create the rsync command. Make it run with as low priorities as possible so that it does not interfere with other processes.
         rsync = ['rsync']
         rsync_remote_args = []
         rsync_local_args = ['-a', '--delete', '--stats', '--inplace', '-v']
@@ -59,14 +60,37 @@ class OVZBackup:
         
         return rsync_local_cmd
 
-    def _backup_snapshot(self, ctid, backup_path):
+    def _backup_snapshot(self, ctid, remote_snapshot_path, remote_conf_path):
+
         ve_private = call_cmd(self._openvz_private_cmd(ctid)).rstrip()
 
-        backup_snapshot_path = "{0}/snapshot/{1}".format(backup_path, ctid)
-        backup_conf_path = "{0}/conf/{1}".format(backup_path, ctid)
-        
-        conf_path = "/etc/vz/conf/{0}.*".format(ctid)
-        snapshot_path = "{0}/root.hdd/*".format(ve_private)
+        #There are six directories used here.
+
+        #The local directory where ploop snapshots for the container $CTID are stored.
+        #This is typically /vz/private/$CTID/root.hdd/. If it isn't you must change it below.
+        #This path is stored in local_snapshot_path.
+        local_snapshot_path = "{0}/root.hdd/*".format(ve_private)
+
+        #The local directory where all container configuration files are stored.
+        #This is typically /etc/vz/conf/. If it isn't you must change it below.
+        #This path is stored in local_conf_path.
+        local_conf_path = "/etc/vz/conf/{0}.*".format(ctid)
+
+        #The remote directory where all snapshot backups will be stored.
+        #This path is stored in remote_snapshot_path.
+
+        #The remote directory where all configuration backups will be stored.
+        #This path is stored in remote_conf_path.
+
+        #The remote directory where ploop snapshots for the container $CTID are stored.
+        #This is $remote_snapshot_path/$CTID
+        #This path is stored in remote_snapshot_ctid_folder.
+        remote_snapshot_ctid_folder = "{0}/{1}".format(remote_snapshot_path, ctid)
+
+        #The remote directory where configuration files for the container $CTID are stored.
+        #This is $remote_conf_path/$CTID
+        #This path is stored in remote_conf_ctid_folder.
+        remote_conf_ctid_folder = "{0}/{1}".format(remote_conf_path, ctid)
 
         #Create a unique ID for the snapshot
         unique_id = uuid.uuid4()
@@ -78,13 +102,13 @@ class OVZBackup:
                      debug = self.debug)
 
             #Backup conf files using rsync
-            call_cmd(self._backup_cmd(conf_path, backup_conf_path),
+            call_cmd(self._backup_cmd(local_conf_path, remote_conf_ctid_folder),
                      shell = True,
                      verbose = self.verbose,
                      debug = self.debug)
 
             #Backup snapshot files using rsync
-            call_cmd(self._backup_cmd(snapshot_path, backup_snapshot_path),
+            call_cmd(self._backup_cmd(local_snapshot_path, remote_snapshot_ctid_folder),
                      shell = True,
                      verbose = self.verbose,
                      debug = self.debug)
@@ -94,14 +118,14 @@ class OVZBackup:
                      verbose = self.verbose,
                      debug = self.debug)
 
-    def backup(self, ctids, path):
+    def backup(self, ctids, snapshot_path, conf_path):
         failed_ctids = []
         successful_ctids = []
 
         #Back up each container and remember if it failed or not.
         for ctid in ctids:
             try:
-                self._backup_snapshot(ctid, path)
+                self._backup_snapshot(ctid, snapshot_path, conf_path)
                 successful_ctids.append(ctid)
             except OSError as e:
                 #A call command could not be executed. Log this and try the next container.
@@ -161,12 +185,16 @@ def main():
 
     parser.add_argument('-v', '--verbose', default=False, action='store_true', help="Be verbose.")
 
-    parser.add_argument('path', help="Path to where backups shall be stored.")
+    parser.add_argument('snapshot_path', help="Path to where snapshot backups shall be stored.")
+
+    parser.add_argument('conf_path', nargs='?', help="Sets a separate path for storing configuration backups. The snapshot path is used by default.")
 
     parser.add_argument('-t', '--mailto', action='append', default=[],
                         help="Mail address to send error messages to.")
 
     args = parser.parse_args()
+
+    conf_path = args.conf_path if args.conf_path != None else args.snapshot_path
 
     #Get a list of all OpenVZ containers
     all_ctids_raw = call_cmd(['vzlist', '-a', '-Hoctid'])
@@ -193,7 +221,7 @@ def main():
 
     ovz_backup = OVZBackup(mail_to = args.mailto, debug = args.debug, verbose = args.verbose)
 
-    (failed_ctids, successful_ctids) = ovz_backup.backup(to_back_up, args.path)
+    (failed_ctids, successful_ctids) = ovz_backup.backup(to_back_up, args.snapshot_path, conf_path)
 
     if args.verbose:
         print("Successful backups:")
