@@ -5,12 +5,17 @@ OVZ-Backup is a small python script that creates ploop snapshots of OpenVZ conta
 ## Usage
 
 ```
-ovz-backup [OPTIONS] path
+ovz-backup [OPTIONS] snapshot_path [conf_path]
 ```
 
-path
+snapshot_path
 
-	Path to where backups shall be stored.
+	Path to where snapshot backups shall be stored.
+	
+conf_path
+
+	Sets a separate path for storing configuration backups.
+	The snapshot path is used by default.
 
 ### Options
 
@@ -40,9 +45,9 @@ path
 
 ## Examples
 
-Only back up the containers 101, 102, and 103.
+Only back up the containers 101, 102, and 103. Store configuration files in a separate directory.
 ```
-ovz-backup.py -i 101 102 103 -v -- backupuser@backup.example.com:/path/to/backup/folder/
+ovz-backup.py -i 101 102 103 -v -- backupuser@backup.example.com:/path/to/backup/folder/snapshots/ backupuser@backup.example.com:/path/to/backup/folder/conf/
 ```
 Back up all containers except 101 and send error messages to user@example.com and admin@example.com.
 ```
