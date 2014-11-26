@@ -85,12 +85,12 @@ class OVZBackup:
         #The remote directory where ploop snapshots for the container $CTID are stored.
         #This is $remote_snapshot_path/$CTID
         #This path is stored in remote_snapshot_ctid_folder.
-        remote_snapshot_ctid_folder = "{0}/{1}".format(remote_snapshot_path, ctid)
+        remote_snapshot_ctid_folder = "{0}/{1}/".format(remote_snapshot_path, ctid)
 
         #The remote directory where configuration files for the container $CTID are stored.
         #This is $remote_conf_path/$CTID
         #This path is stored in remote_conf_ctid_folder.
-        remote_conf_ctid_folder = "{0}/{1}".format(remote_conf_path, ctid)
+        remote_conf_ctid_folder = "{0}/{1}/".format(remote_conf_path, ctid)
 
         #Create a unique ID for the snapshot
         unique_id = uuid.uuid4()
