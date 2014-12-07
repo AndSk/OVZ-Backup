@@ -33,24 +33,24 @@ class OVZBackup:
             call_cmd(self._send_mail_cmd(recipient, "ovz-backup failure"), input = error, verbose = self.verbose, debug = self.debug)
         
     def _send_mail_cmd(self, mail_to, subject):
-        return ['mail', '-s', subject, mail_to]
+        return ['/bin/mail', '-s', subject, mail_to]
         
     def _openvz_private_cmd(self, ctid):
-        return ['vzlist', '-H', '-o', 'private', str(ctid)]
+        return ['/usr/sbin/vzlist', '-H', '-o', 'private', str(ctid)]
 
     def _openvz_snapshot_cmd(self, ctid, unique_id):
-        return ['vzctl', 'snapshot', str(ctid), '--id', str(unique_id), '--skip-suspend', '--skip-config']
+        return ['/usr/sbin/vzctl', 'snapshot', str(ctid), '--id', str(unique_id), '--skip-suspend', '--skip-config']
 
     def _openvz_snapshot_delete_cmd(self, ctid, unique_id):
-        return ['vzctl', 'snapshot-delete', str(ctid), '--id', str(unique_id)]
+        return ['/usr/sbin/vzctl', 'snapshot-delete', str(ctid), '--id', str(unique_id)]
 
     def _backup_cmd(self, file_to_back_up, backup_to):
         #Create the rsync command. Make it run with as low priorities as possible so that it does not interfere with other processes.
-        rsync = ['rsync']
+        rsync = ['/usr/bin/rsync']
         rsync_remote_args = []
         rsync_local_args = ['-a', '--delete', '--stats', '--inplace', '-v']
-        nice = ['nice', '-n', '19']
-        ionice = ['ionice', '-c', '3']
+        nice = ['/bin/nice', '-n', '19']
+        ionice = ['/usr/bin/ionice', '-c', '3']
         rsync_remote_cmd = nice + ionice + rsync + rsync_remote_args
         
         rsync_local_cmd = rsync_remote_cmd + \
@@ -197,7 +197,7 @@ def main():
     conf_path = args.conf_path if args.conf_path != None else args.snapshot_path
 
     #Get a list of all OpenVZ containers
-    all_ctids_raw = call_cmd(['vzlist', '-a', '-Hoctid'])
+    all_ctids_raw = call_cmd(['/usr/sbin/vzlist', '-a', '-Hoctid'])
 
     #Remove whitespaces
     all_ctids = [int(s) for s in all_ctids_raw.split() if s.isdigit()]
